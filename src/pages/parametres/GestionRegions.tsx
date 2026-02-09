@@ -22,19 +22,23 @@ const GestionRegions = () => {
 
   const fetchData = async () => {
     try {
-      const { data: districtsData } = await (supabase as any)
+      const { data: districtsData, error: dErr } = await supabase
         .from("districts")
         .select("*")
         .eq("est_actif", true)
         .order("nom");
       
-      const { data: regionsData } = await (supabase as any)
+      if (dErr) throw dErr;
+
+      const { data: regionsData, error: rErr } = await supabase
         .from("regions")
         .select("*, districts(nom)")
         .order("nom");
 
-      if (districtsData) setDistricts(districtsData);
-      if (regionsData) setRegions(regionsData);
+      if (rErr) throw rErr;
+
+      setDistricts(districtsData || []);
+      setRegions(regionsData || []);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -48,7 +52,7 @@ const GestionRegions = () => {
 
   const toggleRegion = async (regionId: string, currentStatus: boolean) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("regions")
         .update({ est_active: !currentStatus })
         .eq("id", regionId);
@@ -115,38 +119,38 @@ const GestionRegions = () => {
             <p className="text-center py-8">Chargement...</p>
           ) : (
             <div className="space-y-2">
-              {filteredRegions.map((region) => (
-                <div
-                  key={region.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <Label htmlFor={`region-${region.id}`} className="font-medium cursor-pointer">
-                      {region.nom}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      District: {region.districts?.nom || "Non défini"}
-                    </p>
-                  </div>
-                  <Switch
-                    id={`region-${region.id}`}
-                    checked={region.est_active}
-                    onCheckedChange={() => toggleRegion(region.id, region.est_active)}
-                  />
-                </div>
-              ))}
-              {filteredRegions.length === 0 && (
+              {filteredRegions.length === 0 ? (
                 <p className="text-center py-4 text-muted-foreground">
                   Aucune région trouvée
                 </p>
+              ) : (
+                filteredRegions.map((region) => (
+                  <div
+                    key={region.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <Label htmlFor={`region-${region.id}`} className="font-medium cursor-pointer">
+                        {region.nom}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        District: {region.districts?.nom || "Non défini"}
+                      </p>
+                    </div>
+                    <Switch
+                      id={`region-${region.id}`}
+                      checked={region.est_active ?? false}
+                      onCheckedChange={() => toggleRegion(region.id, region.est_active ?? false)}
+                    />
+                  </div>
+                ))
               )}
             </div>
           )}
 
           <div className="mt-6 pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              💡 Note: La région <span className="font-semibold">Haut-Sassandra</span> est activée par défaut.
-              Activez progressivement d'autres régions selon votre déploiement.
+              💡 {filteredRegions.length} région(s) affichée(s) • {filteredRegions.filter(r => r.est_active).length} active(s)
             </p>
           </div>
         </CardContent>

@@ -381,7 +381,7 @@ const Offres = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Redevance modulable :</p>
+                      <p className="text-sm text-muted-foreground">Redevance mensuelle :</p>
                       <div className="flex items-baseline gap-2">
                         <span className="text-xl font-bold">{formatMontant(offre.contribution_mensuelle_par_ha)}F</span>
                         <span className="text-sm text-muted-foreground">/ ha / mois</span>

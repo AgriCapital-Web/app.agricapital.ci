@@ -49,12 +49,13 @@ const TARIFS_PALMINVEST = {
   da_par_hectare: 30000
 };
 
+// TerraPalm est entièrement gratuit
 const TARIFS_TERRAPALM = {
   jour: 0,
   mois: 0,
   trimestre: 0,
   annee: 0,
-  da_par_hectare: 10000
+  da_par_hectare: 0
 };
 
 const ClientPayment = ({ souscripteur, plantations, paiements, onBack }: ClientPaymentProps) => {
@@ -105,7 +106,7 @@ const ClientPayment = ({ souscripteur, plantations, paiements, onBack }: ClientP
           .from('paiements')
           .update({
             statut: 'valide',
-            fedapay_transaction_id: response.transactionId,
+            fedapay_transaction_id: response.transactionId, // réutilise la colonne existante pour stocker l'ID KKiaPay
             date_paiement: new Date().toISOString(),
             montant_paye: response.amount || paiementData?.montant || 0,
             metadata: {
@@ -506,7 +507,7 @@ const ClientPayment = ({ souscripteur, plantations, paiements, onBack }: ClientP
                 <div>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Calculator className="h-5 w-5 text-primary" />
-                    {typePaiement === 'da' ? 'Droit d\'accès' : 'Redevance modulable'}
+                    {typePaiement === 'da' ? 'Droit d\'accès' : 'Redevance mensuelle'}
                   </CardTitle>
                 </div>
               </div>
@@ -691,7 +692,7 @@ const ClientPayment = ({ souscripteur, plantations, paiements, onBack }: ClientP
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Type</span>
-                  <span className="font-medium">{typePaiement === 'da' ? 'Droit d\'accès' : 'Redevance modulable'}</span>
+                  <span className="font-medium">{typePaiement === 'da' ? 'Droit d\'accès' : 'Redevance mensuelle'}</span>
                 </div>
                 <div className="flex justify-between border-t pt-3">
                   <span className="font-semibold text-lg">Montant</span>

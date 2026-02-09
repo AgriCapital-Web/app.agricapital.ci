@@ -164,14 +164,26 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
                     </div>
                     
                     <div className="mt-auto space-y-2">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-bold">{formatMontant(offre.montant_da_par_ha)}F</span>
-                        <span className="text-xs text-muted-foreground">/ha</span>
-                      </div>
+                      {offre.montant_da_par_ha === 0 ? (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-bold text-green-600">GRATUIT</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-bold">{formatMontant(offre.montant_da_par_ha)}F</span>
+                          <span className="text-xs text-muted-foreground">/ha</span>
+                        </div>
+                      )}
                       
-                      <div className="text-xs text-muted-foreground">
-                        + {formatMontant(offre.contribution_mensuelle_par_ha)}F/mois/ha
-                      </div>
+                      {offre.contribution_mensuelle_par_ha > 0 ? (
+                        <div className="text-xs text-muted-foreground">
+                          + {formatMontant(offre.contribution_mensuelle_par_ha)}F/mois/ha (redevance mensuelle)
+                        </div>
+                      ) : (
+                        <div className="text-xs text-green-600 font-medium">
+                          Aucune redevance mensuelle
+                        </div>
+                      )}
                     </div>
                     
                     {isSelected && (

@@ -16,34 +16,30 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
   const [paiement, setPaiement] = useState<any>(null);
   const [checkCount, setCheckCount] = useState(0);
 
-  // Support multiple parameter formats from different payment providers
   const reference = searchParams.get('reference') || searchParams.get('ref');
   const urlStatus = searchParams.get('status');
   const transactionId = searchParams.get('id') || searchParams.get('transaction_id') || searchParams.get('transactionId');
-  const paymentProvider = searchParams.get('provider') || 'auto';
 
   useEffect(() => {
     const checkPaymentStatus = async () => {
-      console.log('PaymentReturn: Checking payment status', { reference, transactionId, urlStatus, paymentProvider });
+      console.log('PaymentReturn: Checking payment status', { reference, transactionId, urlStatus });
       
       if (!reference && !transactionId) {
-        console.log('PaymentReturn: No reference or transactionId found');
         setStatus('pending');
         return;
       }
 
       try {
-        // 1. Rechercher le paiement en base
         let query = supabase.from('paiements').select(`
           *,
-          plantations (nom_plantation, id_unique),
+          plantations (nom_plantation, id_unique, superficie_ha),
           souscripteurs (nom_complet, telephone)
         `);
 
         if (reference) {
           query = query.eq('reference', reference);
         } else if (transactionId) {
-          query = query.eq('fedapay_transaction_id', transactionId);
+          query = query.or(`fedapay_transaction_id.eq.${transactionId},metadata->>kkiapay_transaction_id.eq.${transactionId}`);
         }
 
         const { data: dbPaiement, error: dbError } = await query.maybeSingle();
@@ -53,12 +49,9 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
           throw dbError;
         }
 
-        console.log('PaymentReturn: Found payment', dbPaiement);
-
         if (dbPaiement) {
           setPaiement(dbPaiement);
 
-          // Si déjà validé ou échoué, afficher le statut
           if (dbPaiement.statut === 'valide') {
             setStatus('success');
             return;
@@ -69,105 +62,60 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
             return;
           }
 
-          // 2. Vérifier le statut côté serveur si on a un transactionId
+          // Vérifier via KKiaPay edge function si on a un transactionId
           if (transactionId) {
-            // Déterminer le provider depuis les metadata ou auto-detect
-            const metadata = dbPaiement.metadata as Record<string, any> | null;
-            const provider = metadata?.payment_provider || paymentProvider;
-            
-            let verifyResult = null;
-            
-            if (provider === 'kkiapay' || provider === 'auto') {
-              // Essayer KKiaPay d'abord
-              try {
-                const { data, error } = await supabase.functions.invoke('kkiapay-verify-transaction', {
-                  body: { transactionId }
-                });
-                
-                if (!error && data?.success) {
-                  verifyResult = {
-                    provider: 'kkiapay',
-                    status: data.transaction?.status?.toLowerCase(),
-                    isSuccess: data.transaction?.isPaymentSuccessful,
-                    amount: data.transaction?.amount
-                  };
-                }
-              } catch (e) {
-                console.log('PaymentReturn: KKiaPay verify failed, trying FedaPay', e);
-              }
-            }
-            
-            if (!verifyResult && (provider === 'fedapay' || provider === 'auto')) {
-              // Essayer FedaPay
-              try {
-                const { data, error } = await supabase.functions.invoke('fedapay-verify-transaction', {
-                  body: { transactionId }
-                });
-                
-                if (!error && data?.success) {
-                  const t = data.transaction;
-                  const tStatus = (t?.status || t?.state || '').toString().toLowerCase();
-                  verifyResult = {
-                    provider: 'fedapay',
-                    status: tStatus,
-                    isSuccess: tStatus === 'approved',
-                    amount: t?.amount
-                  };
-                }
-              } catch (e) {
-                console.log('PaymentReturn: FedaPay verify failed', e);
-              }
-            }
-            
-            console.log('PaymentReturn: Verify result', verifyResult);
-            
-            if (verifyResult) {
-              const isApproved = verifyResult.isSuccess || verifyResult.status === 'success' || verifyResult.status === 'approved';
-              const isFailed = verifyResult.status === 'failed' || verifyResult.status === 'declined' || 
-                               verifyResult.status === 'canceled' || verifyResult.status === 'cancelled' || 
-                               verifyResult.status === 'refused';
+            try {
+              const { data, error } = await supabase.functions.invoke('kkiapay-verify-transaction', {
+                body: { transactionId }
+              });
               
-              if (isApproved || isFailed) {
-                const newStatus = isApproved ? 'valide' : 'echec';
+              if (!error && data?.success) {
+                const isSuccess = data.transaction?.isPaymentSuccessful || 
+                                  data.transaction?.status?.toLowerCase() === 'success';
+                const isFailed = data.transaction?.status?.toLowerCase() === 'failed' || 
+                                 data.transaction?.status?.toLowerCase() === 'canceled';
                 
-                const { error: updateError } = await supabase
-                  .from('paiements')
-                  .update({
-                    statut: newStatus,
-                    fedapay_transaction_id: transactionId,
-                    montant_paye: isApproved ? (verifyResult.amount ?? dbPaiement.montant) : 0,
-                    date_paiement: isApproved ? new Date().toISOString() : null,
-                    metadata: {
-                      ...(dbPaiement.metadata as Record<string, any> || {}),
-                      verified_provider: verifyResult.provider,
-                      verified_at: new Date().toISOString()
-                    }
-                  })
-                  .eq('id', dbPaiement.id);
+                if (isSuccess || isFailed) {
+                  const newStatus = isSuccess ? 'valide' : 'echec';
+                  
+                  const { error: updateError } = await supabase
+                    .from('paiements')
+                    .update({
+                      statut: newStatus,
+                      fedapay_transaction_id: transactionId,
+                      montant_paye: isSuccess ? (data.transaction?.amount ?? dbPaiement.montant) : 0,
+                      date_paiement: isSuccess ? new Date().toISOString() : null,
+                      metadata: {
+                        ...(dbPaiement.metadata as Record<string, any> || {}),
+                        kkiapay_transaction_id: transactionId,
+                        verified_at: new Date().toISOString(),
+                        payment_provider: 'kkiapay'
+                      }
+                    })
+                    .eq('id', dbPaiement.id);
 
-                if (!updateError) {
-                  const updated = {
-                    ...dbPaiement,
-                    statut: newStatus,
-                    fedapay_transaction_id: transactionId,
-                    montant_paye: isApproved ? (verifyResult.amount ?? dbPaiement.montant) : 0,
-                    date_paiement: isApproved ? new Date().toISOString() : null,
-                  };
-                  setPaiement(updated);
-                  
-                  // Si paiement DA validé, mettre à jour la superficie activée
-                  if (isApproved && dbPaiement.type_paiement === 'DA' && dbPaiement.plantation_id) {
-                    await updatePlantationAfterDA(dbPaiement);
+                  if (!updateError) {
+                    setPaiement({
+                      ...dbPaiement,
+                      statut: newStatus,
+                      montant_paye: isSuccess ? (data.transaction?.amount ?? dbPaiement.montant) : 0,
+                    });
+                    
+                    if (isSuccess && dbPaiement.type_paiement === 'DA' && dbPaiement.plantation_id) {
+                      await activatePlantationAfterDA(dbPaiement);
+                    }
+                    
+                    setStatus(isSuccess ? 'success' : 'error');
+                    return;
                   }
-                  
-                  setStatus(isApproved ? 'success' : 'error');
-                  return;
                 }
               }
+            } catch (e) {
+              console.log('PaymentReturn: KKiaPay verify failed', e);
             }
           }
           
-          // 3. Si le statut URL indique un succès, mettre à jour
+          // Fallback: si URL status indique succès
           if (urlStatus === 'success' || urlStatus === 'approved') {
             const { error: updateError } = await supabase
               .from('paiements')
@@ -179,17 +127,10 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
               .eq('id', dbPaiement.id);
 
             if (!updateError) {
-              const updated = {
-                ...dbPaiement,
-                statut: 'valide',
-                montant_paye: dbPaiement.montant,
-                date_paiement: new Date().toISOString(),
-              };
-              setPaiement(updated);
+              setPaiement({ ...dbPaiement, statut: 'valide', montant_paye: dbPaiement.montant });
               
-              // Si paiement DA validé, mettre à jour la superficie activée
               if (dbPaiement.type_paiement === 'DA' && dbPaiement.plantation_id) {
-                await updatePlantationAfterDA(dbPaiement);
+                await activatePlantationAfterDA(dbPaiement);
               }
               
               setStatus('success');
@@ -197,29 +138,24 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
             }
           }
 
-          // Continuer à vérifier périodiquement
           if (checkCount < 10) {
             setTimeout(() => setCheckCount(c => c + 1), 2500);
           }
           setStatus('pending');
         } else {
-          // Paiement non trouvé
-          console.log('PaymentReturn: Payment not found in database');
           setStatus('pending');
         }
       } catch (error) {
-        console.error('PaymentReturn: Error checking payment:', error);
+        console.error('PaymentReturn: Error:', error);
         setStatus('pending');
       }
     };
 
     checkPaymentStatus();
-  }, [reference, transactionId, checkCount, urlStatus, paymentProvider]);
+  }, [reference, transactionId, checkCount, urlStatus]);
 
-  // Mettre à jour la plantation après paiement DA
-  const updatePlantationAfterDA = async (paiement: any) => {
+  const activatePlantationAfterDA = async (paiement: any) => {
     try {
-      // Récupérer la plantation
       const { data: plantation } = await supabase
         .from('plantations')
         .select('*')
@@ -227,22 +163,35 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
         .single();
       
       if (plantation) {
-        const newSuperficieActivee = plantation.superficie_ha;
-        
         await supabase
           .from('plantations')
           .update({
-            superficie_activee: newSuperficieActivee,
+            superficie_activee: plantation.superficie_ha,
             date_activation: new Date().toISOString(),
             statut: 'active',
             statut_global: 'actif'
           })
           .eq('id', paiement.plantation_id);
+
+        // Update souscripteur total DA
+        if (paiement.souscripteur_id) {
+          const { data: allDA } = await supabase
+            .from('paiements')
+            .select('montant_paye')
+            .eq('souscripteur_id', paiement.souscripteur_id)
+            .eq('type_paiement', 'DA')
+            .eq('statut', 'valide');
           
-        console.log('PaymentReturn: Plantation updated after DA payment');
+          const totalDA = allDA?.reduce((sum, p) => sum + (p.montant_paye || 0), 0) || 0;
+          
+          await supabase
+            .from('souscripteurs')
+            .update({ total_da_verse: totalDA })
+            .eq('id', paiement.souscripteur_id);
+        }
       }
     } catch (error) {
-      console.error('PaymentReturn: Error updating plantation after DA:', error);
+      console.error('PaymentReturn: Error activating plantation:', error);
     }
   };
 
@@ -252,18 +201,12 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary/95 to-primary/85 flex flex-col">
-      {/* Header */}
       <header className="py-6 px-4">
         <div className="container mx-auto flex justify-center">
-          <img 
-            src={logoWhite} 
-            alt="AgriCapital" 
-            className="h-16 object-contain"
-          />
+          <img src={logoWhite} alt="AgriCapital" className="h-16 object-contain" />
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 py-6">
         <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden">
           <CardContent className="p-8 text-center space-y-6">
@@ -282,9 +225,7 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
                   <CheckCircle className="h-20 w-20 text-green-500 mx-auto relative" />
                 </div>
                 <h2 className="text-2xl font-bold text-green-600">Paiement réussi !</h2>
-                <p className="text-muted-foreground">
-                  Votre paiement a été confirmé avec succès.
-                </p>
+                <p className="text-muted-foreground">Votre paiement a été confirmé avec succès.</p>
                 
                 {paiement && (
                   <div className="bg-green-50 rounded-lg p-4 text-left space-y-2">
@@ -320,9 +261,7 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
               <>
                 <XCircle className="h-20 w-20 text-red-500 mx-auto" />
                 <h2 className="text-2xl font-bold text-red-600">Paiement échoué</h2>
-                <p className="text-muted-foreground">
-                  Votre paiement n'a pas pu être traité. Veuillez réessayer ou contacter le support.
-                </p>
+                <p className="text-muted-foreground">Votre paiement n'a pas pu être traité.</p>
                 
                 {paiement && (
                   <div className="bg-red-50 rounded-lg p-4 text-left space-y-2">
@@ -351,13 +290,9 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
 
             {status === 'pending' && (
               <>
-                <div className="relative">
-                  <Loader2 className="h-20 w-20 text-amber-500 mx-auto animate-spin" />
-                </div>
+                <Loader2 className="h-20 w-20 text-amber-500 mx-auto animate-spin" />
                 <h2 className="text-xl font-bold text-amber-600">Paiement en cours de traitement</h2>
-                <p className="text-muted-foreground">
-                  Votre paiement est en cours de vérification. Cela peut prendre quelques instants.
-                </p>
+                <p className="text-muted-foreground">Vérification en cours...</p>
                 
                 {checkCount < 5 && (
                   <p className="text-sm text-muted-foreground">
@@ -366,11 +301,7 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
                 )}
 
                 <div className="space-y-3">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setCheckCount(c => c + 1)}
-                    className="w-full gap-2"
-                  >
+                  <Button variant="outline" onClick={() => setCheckCount(c => c + 1)} className="w-full gap-2">
                     <RefreshCw className="h-4 w-4" />
                     Actualiser le statut
                   </Button>
@@ -384,7 +315,6 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
         </Card>
       </main>
 
-      {/* Footer */}
       <footer className="py-4 text-center text-white/90 text-sm">
         <p>Support: +225 05 64 55 17 17</p>
         <p className="text-xs text-white/70 mt-1">© 2025 AgriCapital</p>
