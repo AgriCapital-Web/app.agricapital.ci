@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Helmet } from "react-helmet-async";
 import logoGreen from "@/assets/logo-green.png";
 import { Users, Sprout, TrendingUp, Award, MapPin, ArrowRight, CheckCircle } from "lucide-react";
 
@@ -83,6 +84,11 @@ const Index = () => {
   }
 
   return (
+    <>
+    <Helmet>
+      <meta name="robots" content="noindex, nofollow" />
+      <title>AgriCapital CRM - Gestion</title>
+    </Helmet>
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10">
       {/* Header */}
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -246,6 +252,7 @@ const Index = () => {
         </div>
       </footer>
     </div>
+    </>
   );
 };
 
