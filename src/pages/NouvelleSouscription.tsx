@@ -128,24 +128,32 @@ const NouvelleSouscription = () => {
       if (genErr) throw genErr;
 
       // Créer le souscripteur
+      const nomComplet = `${formData.nom_famille || ''} ${formData.prenoms || ''}`.trim();
+      
       const { data: souscripteur, error: errorSous } = await (supabase as any)
         .from("souscripteurs")
         .insert({
           id_unique: genId,
           offre_id: formData.offre_id,
-          civilite: formData.civilite?.toLowerCase() || 'm',
           nom: formData.nom_famille || "",
           prenoms: formData.prenoms || "",
+          nom_complet: nomComplet,
           date_naissance: formData.date_naissance || null,
           lieu_naissance: formData.lieu_naissance || "",
+          nationalite: formData.nationalite || 'Ivoirienne',
           type_piece: formData.type_piece?.toLowerCase() || 'cni',
           numero_piece: formData.numero_piece || "",
           telephone: formData.telephone || "",
           email: formData.email || null,
+          adresse: formData.domicile || null,
+          localite: formData.localite || null,
           district_id: formData.district_id || null,
           region_id: formData.region_id || null,
           departement_id: formData.departement_id || null,
           sous_prefecture_id: formData.sous_prefecture_id || null,
+          village_id: formData.village_id || null,
+          statut: 'actif',
+          statut_global: 'actif',
         })
         .select()
         .single();

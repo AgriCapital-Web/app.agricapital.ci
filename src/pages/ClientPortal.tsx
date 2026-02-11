@@ -8,6 +8,7 @@ import ClientPaymentHistory from "./client/ClientPaymentHistory";
 import ClientStatistics from "./client/ClientStatistics";
 import PaymentReturn from "./client/PaymentReturn";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import AIAssistant from "@/components/ai/AIAssistant";
 
 type View = 'home' | 'dashboard' | 'payment' | 'portfolio' | 'history' | 'statistics' | 'payment-return';
 
@@ -70,6 +71,11 @@ const ClientPortal = () => {
     }
   };
 
+  // Construire le contexte IA pour le souscripteur
+  const aiContext = souscripteur
+    ? `Souscripteur: ${souscripteur.nom_complet || ''}, Téléphone: ${souscripteur.telephone || ''}, ID: ${souscripteur.id_unique || ''}, Plantations: ${plantations.length}, Total DA versé: ${souscripteur.total_da_verse || 0} FCFA, Paiements validés: ${paiements.filter((p: any) => p.statut === 'valide').length}`
+    : "";
+
   return (
     <>
       <InstallPrompt />
@@ -129,6 +135,11 @@ const ClientPortal = () => {
 
       {view === 'payment-return' && (
         <PaymentReturn onBack={handleBackFromPaymentReturn} />
+      )}
+
+      {/* Assistant IA uniquement quand le souscripteur est connecté */}
+      {souscripteur && view !== 'home' && (
+        <AIAssistant mode="subscriber" context={aiContext} />
       )}
     </>
   );
