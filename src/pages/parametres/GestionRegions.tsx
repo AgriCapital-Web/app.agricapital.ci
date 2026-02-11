@@ -32,7 +32,7 @@ const GestionRegions = () => {
 
       const { data: regionsData, error: rErr } = await supabase
         .from("regions")
-        .select("*, districts(nom)")
+        .select("*, districts!regions_district_id_fkey(nom)")
         .order("nom");
 
       if (rErr) throw rErr;

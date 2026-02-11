@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationCenter } from "@/components/common/NotificationCenter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AIAssistant from "@/components/ai/AIAssistant";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { 
@@ -14,17 +15,11 @@ import {
   CreditCard, 
   LogOut, 
   Menu,
-  Shield,
   Receipt,
-  Plus,
-  UserCheck,
   BarChart3,
   Ticket,
   Wallet,
   FileText,
-  ClipboardList,
-  UsersRound,
-  Tag,
   Settings
 } from "lucide-react";
 
@@ -46,13 +41,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard" },
-    { icon: Plus, label: "Nouvelle Souscription", path: "/nouvelle-souscription" },
     { icon: Users, label: "Souscripteurs", path: "/souscriptions" },
     { icon: Sprout, label: "Plantations", path: "/plantations" },
     { icon: CreditCard, label: "Gestion Paiements", path: "/paiements" },
     { icon: Receipt, label: "Commissions", path: "/commissions", show: canViewFinances },
     { icon: Wallet, label: "Portefeuilles", path: "/portefeuilles", show: canViewFinances },
-    { icon: ClipboardList, label: "Mes Souscripteurs", path: "/portefeuille-clients" },
     { icon: BarChart3, label: "Rapports Techniques", path: "/rapports-techniques", show: canViewRapports },
     { icon: FileText, label: "Rapports Financiers", path: "/rapports-financiers", show: canViewFinances },
     { icon: Ticket, label: "Tickets Support", path: "/tickets" },
@@ -170,6 +163,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           {children}
         </div>
       </main>
+      
+      <AIAssistant 
+        mode="admin" 
+        context={`Utilisateur: ${profile?.nom_complet || 'Admin'}, Rôle: ${profile?.role || 'admin'}`} 
+      />
     </div>
   );
 };

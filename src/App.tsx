@@ -10,25 +10,18 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
-import Planteurs from "./pages/Souscriptions";
+import Souscriptions from "./pages/Souscriptions";
 import PlanteurDetail from "./pages/PlanteurDetail";
 import Plantations from "./pages/Plantations";
-import Parcelles from "./pages/Parcelles";
 import GestionPaiements from "./pages/GestionPaiements";
-import Utilisateurs from "./pages/Utilisateurs";
 import RapportsFinanciers from "./pages/RapportsFinanciers";
 import RapportsTechniques from "./pages/RapportsTechniques";
 import Commissions from "./pages/Commissions";
-import PortefeuilleClients from "./pages/PortefeuilleClients";
 import Portefeuilles from "./pages/Portefeuilles";
-import Equipes from "./pages/Equipes";
-import Promotions from "./pages/Promotions";
-import Offres from "./pages/Offres";
 import NouvelleSouscription from "./pages/NouvelleSouscription";
 import Parametres from "./pages/Parametres";
 import HistoriqueComplet from "./pages/HistoriqueComplet";
 import AccountRequest from "./pages/AccountRequest";
-import AccountRequests from "./pages/AccountRequests";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import Tickets from "./pages/Tickets";
 import ClientPortal from "./pages/ClientPortal";
@@ -80,27 +73,26 @@ const DomainRouter = () => {
       <Route path="/account-request" element={<AccountRequest />} />
       <Route path="/create-super-admin" element={<CreateSuperAdmin />} />
       
-      {/* Protected routes - Dashboard & Core */}
+      {/* Protected routes */}
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/account-requests" element={<AccountRequests />} />
-      
-      {/* Planteurs & Plantations */}
-      <Route path="/souscriptions" element={<Planteurs />} />
+      <Route path="/souscriptions" element={<Souscriptions />} />
       <Route path="/planteur/:id" element={<PlanteurDetail />} />
       <Route path="/planteur/:id/historique" element={<HistoriqueComplet />} />
       <Route path="/plantations" element={<Plantations />} />
-      <Route path="/parcelles" element={<Parcelles />} />
       <Route path="/nouvelle-souscription" element={<NouvelleSouscription />} />
       
-      {/* Paiements - nouvelle page unifiée */}
+      {/* Paiements */}
       <Route path="/paiements" element={<GestionPaiements />} />
-      <Route path="/gestion-paiements" element={<GestionPaiements />} />
+      <Route path="/gestion-paiements" element={<Navigate to="/paiements" replace />} />
       
-      {/* Équipes & Utilisateurs - redirigés vers Paramètres */}
+      {/* Redirections vers Paramètres */}
       <Route path="/utilisateurs" element={<Navigate to="/parametres?tab=utilisateurs" replace />} />
       <Route path="/equipes" element={<Navigate to="/parametres?tab=equipes" replace />} />
       <Route path="/offres" element={<Navigate to="/parametres?tab=offres" replace />} />
       <Route path="/promotions" element={<Navigate to="/parametres?tab=offres" replace />} />
+      <Route path="/portefeuille-clients" element={<Navigate to="/souscriptions" replace />} />
+      <Route path="/parcelles" element={<Navigate to="/plantations" replace />} />
+      <Route path="/account-requests" element={<Navigate to="/parametres?tab=demandes" replace />} />
       
       {/* Rapports */}
       <Route path="/rapports-financiers" element={<RapportsFinanciers />} />
@@ -108,16 +100,15 @@ const DomainRouter = () => {
       
       {/* Finances */}
       <Route path="/commissions" element={<Commissions />} />
-      <Route path="/portefeuille-clients" element={<PortefeuilleClients />} />
       <Route path="/portefeuilles" element={<Portefeuilles />} />
       
       {/* Support */}
       <Route path="/tickets" element={<Tickets />} />
       
-      {/* Admin - Paramètres contient tout */}
+      {/* Admin */}
       <Route path="/parametres" element={<Parametres />} />
       
-      {/* Catch-all 404 */}
+      {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -18,15 +18,6 @@ verify_jwt = false
 [functions.wave-verification]
 verify_jwt = false
 
-[functions.fedapay-create-transaction]
-verify_jwt = false
-
-[functions.fedapay-webhook]
-verify_jwt = false
-
-[functions.fedapay-verify-transaction]
-verify_jwt = false
-
 [functions.kkiapay-create-transaction]
 verify_jwt = false
 
@@ -34,4 +25,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.kkiapay-webhook]
+verify_jwt = false
+
+[functions.ai-assistant]
 verify_jwt = false

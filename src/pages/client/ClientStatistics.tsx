@@ -207,7 +207,7 @@ const ClientStatistics = ({ souscripteur, plantations, paiements, onBack }: Clie
               <BarChart3 className="h-5 w-5 text-primary" />
               Répartition des paiements
             </CardTitle>
-            <CardDescription>Droits d'accès vs Redevances modulables</CardDescription>
+            <CardDescription>Droits d'accès vs Redevances mensuelles</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
