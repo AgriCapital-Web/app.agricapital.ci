@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtime } from "@/hooks/useRealtime";
+import { logActivity } from "@/utils/traceability";
 import { Search, MapPin } from "lucide-react";
 
 const GestionDistricts = () => {
@@ -46,6 +48,13 @@ const GestionDistricts = () => {
 
       if (error) throw error;
 
+      await logActivity({
+        tableName: 'districts',
+        recordId: districtId,
+        action: 'TOGGLE',
+        details: `District ${!currentStatus ? 'activé' : 'désactivé'}`,
+      });
+
       toast({
         title: "Succès",
         description: `District ${!currentStatus ? "activé" : "désactivé"}`,
@@ -59,6 +68,8 @@ const GestionDistricts = () => {
       });
     }
   };
+
+  useRealtime({ table: 'districts', onChange: fetchDistricts });
 
   const filteredDistricts = districts.filter((d) =>
     d.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logActivity } from "@/utils/traceability";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,12 +77,22 @@ const Souscriptions = () => {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
+      const souscripteur = souscripteurs.find(s => s.id === id);
       const { error } = await supabase
         .from("souscripteurs")
         .update({ statut: newStatus, statut_global: newStatus })
         .eq("id", id);
 
       if (error) throw error;
+
+      await logActivity({
+        tableName: 'souscripteurs',
+        recordId: id,
+        action: 'STATUS_CHANGE',
+        details: `Statut changé de "${souscripteur?.statut}" à "${newStatus}"`,
+        ancienValeurs: { statut: souscripteur?.statut },
+        nouvellesValeurs: { statut: newStatus },
+      });
 
       toast({
         title: "Succès",
