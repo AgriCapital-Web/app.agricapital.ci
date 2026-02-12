@@ -649,30 +649,39 @@ export type Database = {
           ancien_valeurs: Json | null
           created_at: string
           created_by: string | null
+          details: string | null
           id: string
+          ip_address: string | null
           nouvelles_valeurs: Json | null
           record_id: string
           table_name: string
+          user_agent: string | null
         }
         Insert: {
           action: string
           ancien_valeurs?: Json | null
           created_at?: string
           created_by?: string | null
+          details?: string | null
           id?: string
+          ip_address?: string | null
           nouvelles_valeurs?: Json | null
           record_id: string
           table_name: string
+          user_agent?: string | null
         }
         Update: {
           action?: string
           ancien_valeurs?: Json | null
           created_at?: string
           created_by?: string | null
+          details?: string | null
           id?: string
+          ip_address?: string | null
           nouvelles_valeurs?: Json | null
           record_id?: string
           table_name?: string
+          user_agent?: string | null
         }
         Relationships: [
           {
@@ -1615,6 +1624,7 @@ export type Database = {
           statut_global: string | null
           technico_commercial_id: string | null
           telephone: string
+          total_contributions_versees: number | null
           total_da_verse: number | null
           total_hectares: number | null
           type_piece: string | null
@@ -1648,6 +1658,7 @@ export type Database = {
           statut_global?: string | null
           technico_commercial_id?: string | null
           telephone: string
+          total_contributions_versees?: number | null
           total_da_verse?: number | null
           total_hectares?: number | null
           type_piece?: string | null
@@ -1681,6 +1692,7 @@ export type Database = {
           statut_global?: string | null
           technico_commercial_id?: string | null
           telephone?: string
+          total_contributions_versees?: number | null
           total_da_verse?: number | null
           total_hectares?: number | null
           type_piece?: string | null

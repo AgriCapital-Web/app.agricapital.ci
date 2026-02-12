@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtime } from "@/hooks/useRealtime";
+import { logActivity } from "@/utils/traceability";
 import { Search, MapPin } from "lucide-react";
 
 const GestionRegions = () => {
@@ -59,6 +61,13 @@ const GestionRegions = () => {
 
       if (error) throw error;
 
+      await logActivity({
+        tableName: 'regions',
+        recordId: regionId,
+        action: 'TOGGLE',
+        details: `Région ${!currentStatus ? 'activée' : 'désactivée'}`,
+      });
+
       toast({
         title: "Succès",
         description: `Région ${!currentStatus ? "activée" : "désactivée"}`,
@@ -72,6 +81,8 @@ const GestionRegions = () => {
       });
     }
   };
+
+  useRealtime({ table: 'regions', onChange: fetchData });
 
   const filteredRegions = regions.filter((region) => {
     const matchesSearch = region.nom?.toLowerCase().includes(searchTerm.toLowerCase());

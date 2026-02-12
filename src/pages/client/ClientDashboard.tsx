@@ -83,7 +83,9 @@ const ClientDashboard = ({
   // Calculer les statistiques
   const totalHectares = plantations.reduce((sum, p) => sum + (p.superficie_ha || 0), 0);
   const totalDAVerse = souscripteur.total_da_verse || 0;
-  const totalRedevances = souscripteur.total_contributions_versees || 0;
+  const totalRedevances = paiements
+    .filter(p => p.statut === 'valide' && p.type_paiement === 'REDEVANCE')
+    .reduce((sum, p) => sum + (p.montant_paye || 0), 0);
   
   // Calculer les arriérés (simplifié - 65F/jour)
   const calculateArrieres = () => {

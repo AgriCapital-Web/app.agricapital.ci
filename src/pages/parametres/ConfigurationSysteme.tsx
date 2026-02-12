@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { logActivity } from "@/utils/traceability";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,8 +64,14 @@ const ConfigurationSysteme = () => {
       
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['configurations'] });
+      logActivity({
+        tableName: 'configurations_systeme',
+        recordId: variables.id,
+        action: 'UPDATE',
+        details: `Configuration modifiée: ${variables.valeur}`,
+      });
       setEditedValues({});
       toast({
         title: "Configuration mise à jour",

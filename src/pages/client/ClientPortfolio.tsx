@@ -64,7 +64,7 @@ const ClientPortfolio = ({ souscripteur, plantations, paiements, onBack }: Clien
     totalHectares: plantations.reduce((sum, p) => sum + (p.superficie_ha || 0), 0),
     hectaresActifs: plantations.reduce((sum, p) => sum + (p.superficie_activee || 0), 0),
     totalDAVerse: souscripteur.total_da_verse || 0,
-    totalContributions: souscripteur.total_contributions_versees || 0,
+    totalContributions: paiements.filter(p => p.statut === 'valide' && p.type_paiement === 'REDEVANCE').reduce((sum, p) => sum + (p.montant_paye || 0), 0),
     paiementsValides: paiements.filter(p => p.statut === 'valide').length,
     paiementsEnAttente: paiements.filter(p => p.statut === 'en_attente').length
   };
